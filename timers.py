@@ -3,7 +3,7 @@ from itertools import chain
 from functools import reduce
 import timeit
 
-num_items_per_model = 50
+num_items_per_model = 100
 
 lots_o_meals = list(chain(
     [Breathatarian('eater{}'.format(x)) for x in range(0,num_items_per_model)],
@@ -28,9 +28,9 @@ def crafty():
     unique_models = reduce(add_to_set,
                            lots_o_meals,
                            {})
-    fieldset = list(
-        chain(
-            (list(vars(m).keys() for m in unique_models.values()))
+    fieldset = set(
+        chain.from_iterable(
+            (vars(m).keys() for m in unique_models.values())
         ))
 
 print( "Results for {} models".format(num_items_per_model))

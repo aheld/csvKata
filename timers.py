@@ -1,13 +1,15 @@
 import timeit
 from itertools import chain
-from functools import reduce
+from functools import reduce, lru_cache
 from collections import OrderedDict
 from test_serializer import Breathatarian, Diet, Snack, Meal, TastingMenu
-
+from ascii_graph import Pyasciigraph
+from ascii_graph.colors import Gre, Yel, Red
 
 EXPECTED = {'beverage', 'protein', 'dessert', 'eater'}
 
 
+@lru_cache()
 def get_models(num):
     return list(chain(
         [Breathatarian('eater{}'.format(x))
@@ -85,7 +87,7 @@ def run_and_time(func_name, num):
                          globals=globals())
 
 
-def report(runs, num):
+def text_report(runs, num):
     fastest = min(runs.values())
     print("Results for {} models".format(num))
     print("{}{}{}".format("  function".ljust(24),
@@ -102,7 +104,36 @@ def report(runs, num):
             func_name.ljust(20), timed_run, (timed_run/fastest), label))
 
 
-for num in [10, 100, 1000, 10000]:
-    runs = {func_name: run_and_time(func_name, num)
+def report(runs, num):
+    fastest = min(runs.values())
+    slowest = max(runs.values())
+    if slowest > (10 * fastest):
+        text_report(runs, num)
+        return
+    print("Results for {} models".format(num))
+    sorted_run = OrderedDict(sorted(runs.items(), key=lambda t: t[1]))
+
+    graph = Pyasciigraph(float_format='{:08.6f}', multivalue=False)
+    graph_data = []
+    for (k, value) in sorted_run.items():
+        if value == fastest:
+            graph_data.append((k, value, Gre))
+        else:
+            item = []
+            item.append((fastest, Gre))
+            if value > (2 * fastest):
+                item.append((2 * fastest, Yel))
+                item.append((value, Red))
+            else:
+                item.append((value, Yel))
+            graph_data.append((k, item))
+
+    for line in graph.graph('{} Models'.format(num), graph_data):
+        print(line)
+
+
+for num in [10, 100, 1000, 5000]:
+    _ = get_models(num)  # pre-load the cache
+    runs = {func_name[4:]: run_and_time(func_name, num)
             for func_name in locals() if func_name.startswith('try_')}
     report(runs, num)
